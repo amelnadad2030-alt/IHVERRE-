@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # SQL Server Database
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: ihverre_sqlserver
+    environment:
+      SA_PASSWORD: "IHVerre@2024!"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+    networks:
+      - ihverre_network
+
+  # Backend API
+  api:
+    build:
+      context: ./backend
+      dockerfile: IHVerre.Api/Dockerfile
+    container_name: ihverre_api
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=IHVerreDB;User Id=sa;Password=IHVerre@2024!;"
+    ports:
+      - "5000:80"
+    depends_on:
+      - sqlserver
+    networks:
+      - ihverre_network
+
+  # Frontend React
+  frontend:
+    build:
+      context: ./frontend/React
+      dockerfile: Dockerfile
+    container_name: ihverre_frontend
+    environment:
+      REACT_APP_API_URL: "http://localhost:5000/api"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    networks:
+      - ihverre_network
+
+volumes:
+  sqlserver_data:
+
+networks:
+  ihverre_network:
+    driver: bridge
